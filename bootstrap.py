@@ -50,9 +50,12 @@ except ImportError:
 if not MAC:
     MAC = "00:00:00:00:00:00"
 
-RELEASE = platform.linux_distribution()[1]
 API_PORT = 443
 ARCHITECTURE = get_architecture()
+try:
+    RELEASE = platform.linux_distribution()[1]
+except AttributeError:
+    RELEASE = platform.dist()[1]
 
 parser = OptionParser()
 parser.add_option("-s", "--server", dest="sat6_fqdn", help="FQDN of Satellite OR Satellite Capsule - omit https://", metavar="SAT6_FQDN")
