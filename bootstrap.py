@@ -172,7 +172,7 @@ def get_bootstrap_rpm():
     if options.force:
         clean_katello_agent()
     print_generic("Retrieving Candlepin Consumer RPMs")
-    exec_failexit("/usr/bin/yum -y localinstall http://%s/pub/katello-ca-consumer-latest.noarch.rpm --nogpgcheck" % options.sat6_fqdn)
+    exec_failexit("rpm -ivh http://%s/pub/katello-ca-consumer-latest.noarch.rpm" % options.sat6_fqdn)
 
 
 def migrate_systems(org_name, activationkey):
