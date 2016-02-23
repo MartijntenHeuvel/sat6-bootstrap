@@ -1,9 +1,6 @@
 #!/usr/bin/python
 #
-try:
-    import json
-except ImportError:
-    import simplejson as json
+
 import getpass
 import urllib2
 import base64
@@ -502,6 +499,24 @@ def get_api_port():
     configparser = SafeConfigParser()
     configparser.read('/etc/rhsm/rhsm.conf')
     return configparser.get('server', 'port')
+
+
+# try to import json or simplejson
+# do it at this point in the code to have our custom print and exec functions available
+try:
+    import json
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        print_warning("Could neither import json nor simplejson, will try to install simplejson and re-import")
+        exec_failexit("yum install -y python-simplejson")
+        try:
+            import simplejson as json
+        except ImportError:
+            print_error("Could not install python-simplejson")
+            sys.exit(1)
+
 
 print "Satellite 6 Bootstrap Script"
 print "This script is designed to register new systems or to migrate an existing system to Red Hat Satellite 6"
