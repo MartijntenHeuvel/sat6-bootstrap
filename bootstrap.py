@@ -171,6 +171,19 @@ def get_bootstrap_rpm():
     print_generic("Retrieving Candlepin Consumer RPMs")
     exec_failexit("rpm -ivh http://%s/pub/katello-ca-consumer-latest.noarch.rpm" % options.sat6_fqdn)
 
+def migrate_rhel5():
+    # the rhn-channel -l command will help here later
+    # install prereqs
+    install_prereqs()
+    if not os.path.exists('/etc/pki/product/'):
+        os.mkdir("/etc/pki/product/")
+    if not os.path.exists('/etc/pki/product/69.pem'):
+        if ARCHITECTURE == "x86_64":
+            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-x86_64-10746ef5fdef-69.pem', '/etc/pki/product/69.pem')
+        else:
+            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-i386-cb7d6c6883e4-69.pem', /'etc/pki/product/69.pem')
+        if os.path.exists('/etc/sysconfig/rhn/systemid'):
+            os.remove('/etc/sysconfig/rhn/systemid')
 
 def migrate_systems(org_name, activationkey):
     org_label = return_matching_org_label(org_name)
@@ -184,7 +197,6 @@ def migrate_systems(org_name, activationkey):
         options.rhsmargs += " --force"
     exec_failexit("/usr/sbin/rhn-migrate-classic-to-rhsm --org %s --activation-key %s %s" % (org_label, activationkey, options.rhsmargs))
     exec_failexit("subscription-manager config --rhsm.baseurl=https://%s/pulp/repos" % options.sat6_fqdn)
-
 
 def register_systems(org_name, activationkey, release):
     org_label = return_matching_org_label(org_name)
@@ -496,6 +508,10 @@ def delete_host(host_id):
 
 
 def check_rhn_registration():
+    majrel = int(RELEASE[0])
+    if majrel == 5:
+        print_generic("RHEL5, cannot migrate nicely.")
+        migrate_rhel5()
     return os.path.exists('/etc/sysconfig/rhn/systemid')
 
 
