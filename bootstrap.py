@@ -282,11 +282,11 @@ def install_puppet_agent():
         puppet_conf_file = open('/etc/puppet/puppet.conf', 'wb')
         puppet_conf.write(puppet_conf_file)
         puppet_conf_file.close()
-        print_generic("Running Puppet in noop mode to generate SSL certs")
-        print_generic("Visit the UI and approve this certificate via Infrastructure->Capsules")
-        print_generic("if auto-signing is disabled")
-        exec_failexit("/usr/bin/puppet agent --test --noop --tags no_such_tag --waitforcert 10")
-        exec_failexit("/sbin/service puppet restart")
+    print_generic("Running Puppet in noop mode to generate SSL certs")
+    print_generic("Visit the UI and approve this certificate via Infrastructure->Capsules")
+    print_generic("if auto-signing is disabled")
+    exec_failexit("/usr/bin/puppet agent --test --noop --tags no_such_tag --waitforcert 10")
+    exec_failexit("/sbin/service puppet restart")
 
 def remove_old_rhn_packages():
     pkg_list = "rhn-setup rhn-client-tools yum-rhn-plugin rhnsd rhn-check rhnlib spacewalk-abrt spacewalk-oscap osad"
