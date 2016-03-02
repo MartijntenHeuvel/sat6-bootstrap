@@ -10,6 +10,7 @@ import platform
 import socket
 import os.path
 import glob
+import shutil
 from datetime import datetime
 from optparse import OptionParser
 from urllib import urlencode
@@ -57,6 +58,7 @@ try:
 except AttributeError:
     RELEASE = platform.dist()[1]
 
+MAJREL = int(RELEASE[0])
 parser = OptionParser()
 parser.add_option("-s", "--server", dest="sat6_fqdn", help="FQDN of Satellite OR Satellite Capsule - omit https://", metavar="SAT6_FQDN")
 parser.add_option("-l", "--login", dest="login", default='admin', help="Login user for API Calls", metavar="LOGIN")
@@ -235,31 +237,60 @@ def clean_puppet():
     exec_failexit("/usr/bin/yum -y erase puppet")
     exec_failexit("rm -rf /var/lib/puppet/")
 
+def puppet_conf_rhel5():
+    puppet_env = return_puppetenv_for_hg(return_matching_hg_id(options.hostgroup))
+    PupConf = ('/etc/puppet/puppet.conf')
+    if os.path.exists(PupConf):
+        os.remove(PupConf)
+    cf = None
+    try: 
+        cf = open(PupConf, 'w')
+        cf.write('[main]\n')
+        cf.write('vardir = /var/lib/puppet\n')
+        cf.write('logdir = /var/log/puppet\n')
+        cf.write('rundir = /var/run/puppet\n')
+        cf.write('ssldir = $vardir/ssl\n')
+        cf.write('[agent]\n')
+        cf.write('pluginsync      = true\n')
+        cf.write('report          = true\n')
+        cf.write('ignoreschedules = true\n')
+	cf.write('daemon          = false\n')
+        cf.write('ca_server       = '+(options.sat6_fqdn)+'\n')
+        cf.write('certname        = '+(HOSTNAME)+'\n')
+        cf.write('environment     = '+(puppet_env)+'\n')
+        cf.write('server          = '+(options.sat6_fqdn)+'\n')
+    finally:
+        if cf is not None:
+            cf.close()
 
 def install_puppet_agent():
     puppet_env = return_puppetenv_for_hg(return_matching_hg_id(options.hostgroup))
     print_generic("Installing the Puppet Agent")
     exec_failexit("/usr/bin/yum -y install puppet")
     exec_failexit("/sbin/chkconfig puppet on")
-    exec_failexit("/usr/bin/puppet config set server %s --section agent" % options.sat6_fqdn)
-    exec_failexit("/usr/bin/puppet config set ca_server %s --section agent" % options.sat6_fqdn)
-    exec_failexit("/usr/bin/puppet config set environment %s --section agent" % puppet_env)
-    # Might need this for RHEL5
-    # f = open("/etc/puppet/puppet.conf","a")
-    # f.write("server=%s \n" % options.sat6_fqdn)
-    # f.close()
-    print_generic("Running Puppet in noop mode to generate SSL certs")
-    print_generic("Visit the UI and approve this certificate via Infrastructure->Capsules")
-    print_generic("if auto-signing is disabled")
-    exec_failexit("/usr/bin/puppet agent --test --noop --tags no_such_tag --waitforcert 10")
-    exec_failexit("/sbin/service puppet restart")
-
+    # using a ConfigParser instead of "puppet config set" to remain compatible with Puppet 2.x on RHEL 5
+    if MAJREL == 5: 
+        puppet_conf_rhel5()
+    else: 
+        puppet_conf = SafeConfigParser()
+        puppet_conf.read('/etc/puppet/puppet.conf')
+        if not puppet_conf.has_section('agent'):
+            puppet_conf.add_section('agent')
+        puppet_conf.set('agent', 'server', options.sat6_fqdn)
+        puppet_conf.set('agent', 'ca_server', options.sat6_fqdn)
+        puppet_conf.set('agent', 'environment', puppet_env)
+        puppet_conf_file = open('/etc/puppet/puppet.conf', 'wb')
+        puppet_conf.write(puppet_conf_file)
+        puppet_conf_file.close()
+        print_generic("Running Puppet in noop mode to generate SSL certs")
+        print_generic("Visit the UI and approve this certificate via Infrastructure->Capsules")
+        print_generic("if auto-signing is disabled")
+        exec_failexit("/usr/bin/puppet agent --test --noop --tags no_such_tag --waitforcert 10")
+        exec_failexit("/sbin/service puppet restart")
 
 def remove_old_rhn_packages():
     pkg_list = "rhn-setup rhn-client-tools yum-rhn-plugin rhnsd rhn-check rhnlib spacewalk-abrt spacewalk-oscap osad"
     print_generic("Removing old RHN packages")
-    exec_failexit("/usr/bin/yum -y remove %s" % pkg_list)
-
 
 def fully_update_the_box():
     print_generic("Fully Updating The Box")
@@ -504,8 +535,7 @@ def delete_host(host_id):
 
 
 def check_rhn_registration():
-    majrel = int(RELEASE[0])
-    if majrel == 5:
+    if MAJREL == 5:
         print_generic("RHEL5, cannot migrate nicely.")
         migrate_rhel5()
     return os.path.exists('/etc/sysconfig/rhn/systemid')
@@ -573,3 +603,4 @@ if not options.remove:
 
     if options.removepkgs:
         remove_old_rhn_packages()
+
