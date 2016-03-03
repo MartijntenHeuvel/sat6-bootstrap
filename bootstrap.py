@@ -182,6 +182,7 @@ def migrate_rhel5():
         from subscription_manager.migrate import migrate
     
     me = migrate.MigrationEngine()
+    me.options.force = True
     subscribed_channels = me.get_subscribed_channels_list()
     me.print_banner(("System is currently subscribed to these RHNClassic Channels:"))
     for channel in subscribed_channels:
@@ -189,16 +190,23 @@ def migrate_rhel5():
     me.check_for_conflicting_channels(subscribed_channels)
     me.deploy_prod_certificates(subscribed_channels)
     me.clean_up(subscribed_channels)
+
     # check if certs are actually there..
     if not os.path.exists('/etc/pki/product/'):
         os.mkdir("/etc/pki/product/")
     if not os.path.exists('/etc/pki/product/69.pem'):
-        # or put them there.
-        # id may vary, need to check 
+        # or put them there. Ugly.
         if ARCHITECTURE == "x86_64":
-            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-x86_64-10746ef5fdef-69.pem', '/etc/pki/product/69.pem')
+            for Line in open("/usr/share/rhsm/product/RHEL-5/channel-cert-mapping.txt"):
+                if "rhel-x86_64-server-5:" in Line:
+                    cert=Line.split(" ")[1]
+                    shutil.copy('/usr/share/rhsm/product/RHEL-5/'+cert.strip(), '/etc/pki/product/69.pem')
+                    break
         else:
-            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-i386-cb7d6c6883e4-69.pem', '/etc/pki/product/69.pem')
+            for Line in open("/usr/share/rhsm/product/RHEL-5/channel-cert-mapping.txt"):
+                if "rhel-i386-server-5:" in Line:
+                    cert=Line.split(" ")[1]
+                    shutil.copy('/usr/share/rhsm/product/RHEL-5/'+cert.strip(), '/etc/pki/product/69.pem')
 
     # cleanup
     if os.path.exists('/etc/sysconfig/rhn/systemid'):
@@ -272,7 +280,7 @@ def puppet_conf_rhel5():
         cf.write('pluginsync      = true\n')
         cf.write('report          = true\n')
         cf.write('ignoreschedules = true\n')
-	cf.write('daemon          = false\n')
+        cf.write('daemon          = false\n')
         cf.write('ca_server       = '+(options.sat6_fqdn)+'\n')
         cf.write('certname        = '+(FQDN)+'\n')
         cf.write('environment     = '+(puppet_env)+'\n')
