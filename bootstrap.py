@@ -173,7 +173,6 @@ def get_bootstrap_rpm():
     print_generic("Retrieving Candlepin Consumer RPMs")
     exec_failexit("rpm -ivh http://%s/pub/katello-ca-consumer-latest.noarch.rpm" % options.sat6_fqdn)
 
-
 def migrate_rhel5():
     _LIBPATH = "/usr/share/rhsm"
     # add to the path if need be
@@ -193,7 +192,6 @@ def migrate_rhel5():
     if os.path.exists('/etc/sysconfig/rhn/systemid'):
         os.remove('/etc/sysconfig/rhn/systemid')
 
-
 def migrate_systems(org_name, activationkey):
     org_label = return_matching_org_label(org_name)
     print_generic("Calling rhn-migrate-classic-to-rhsm")
@@ -206,7 +204,6 @@ def migrate_systems(org_name, activationkey):
         options.rhsmargs += " --force"
     exec_failexit("/usr/sbin/rhn-migrate-classic-to-rhsm --org %s --activation-key %s %s" % (org_label, activationkey, options.rhsmargs))
     exec_failexit("subscription-manager config --rhsm.baseurl=https://%s/pulp/repos" % options.sat6_fqdn)
-
 
 def register_systems(org_name, activationkey, release):
     org_label = return_matching_org_label(org_name)
@@ -245,7 +242,6 @@ def clean_puppet():
     exec_failexit("/usr/bin/yum -y erase puppet")
     exec_failexit("rm -rf /var/lib/puppet/")
 
-
 def puppet_conf_rhel5():
     puppet_env = return_puppetenv_for_hg(return_matching_hg_id(options.hostgroup))
     PupConf = ('/etc/puppet/puppet.conf')
@@ -272,7 +268,6 @@ def puppet_conf_rhel5():
         if cf is not None:
             cf.close()
 
-
 def install_puppet_agent():
     puppet_env = return_puppetenv_for_hg(return_matching_hg_id(options.hostgroup))
     print_generic("Installing the Puppet Agent")
@@ -298,11 +293,9 @@ def install_puppet_agent():
     exec_failexit("/usr/bin/puppet agent --test --noop --tags no_such_tag --waitforcert 10")
     exec_failexit("/sbin/service puppet restart")
 
-
 def remove_old_rhn_packages():
     pkg_list = "rhn-setup rhn-client-tools yum-rhn-plugin rhnsd rhn-check rhnlib spacewalk-abrt spacewalk-oscap osad"
     print_generic("Removing old RHN packages")
-
 
 def fully_update_the_box():
     print_generic("Fully Updating The Box")
@@ -547,6 +540,9 @@ def delete_host(host_id):
 
 
 def check_rhn_registration():
+    if MAJREL == 5:
+        print_generic("RHEL5, cannot migrate nicely.")
+        migrate_rhel5()
     return os.path.exists('/etc/sysconfig/rhn/systemid')
 
 
@@ -588,9 +584,6 @@ if options.remove:
 elif check_rhn_registration():
     print_generic('This system is registered to RHN. Attempting to migrate via rhn-classic-migrate-to-rhsm')
     install_prereqs()
-    if MAJREL == 5:
-        print_generic("RHEL5, cannot migrate nicely.")
-        migrate_rhel5()
     get_bootstrap_rpm()
     API_PORT = get_api_port()
     create_host()
