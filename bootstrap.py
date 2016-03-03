@@ -189,9 +189,21 @@ def migrate_rhel5():
     me.check_for_conflicting_channels(subscribed_channels)
     me.deploy_prod_certificates(subscribed_channels)
     me.clean_up(subscribed_channels)
+    # check if certs are actually there..
+    if not os.path.exists('/etc/pki/product/'):
+        os.mkdir("/etc/pki/product/")
+    if not os.path.exists('/etc/pki/product/69.pem'):
+        # or put them there.
+        # id may vary, need to check 
+        if ARCHITECTURE == "x86_64":
+            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-x86_64-10746ef5fdef-69.pem', '/etc/pki/product/69.pem')
+        else:
+            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-i386-cb7d6c6883e4-69.pem', /'etc/pki/product/69.pem')
+
     # cleanup
     if os.path.exists('/etc/sysconfig/rhn/systemid'):
         os.remove('/etc/sysconfig/rhn/systemid')
+
 
 def migrate_systems(org_name, activationkey):
     org_label = return_matching_org_label(org_name)
