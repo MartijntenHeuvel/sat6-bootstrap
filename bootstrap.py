@@ -262,7 +262,7 @@ def puppet_conf_rhel5():
         cf.write('ignoreschedules = true\n')
 	cf.write('daemon          = false\n')
         cf.write('ca_server       = '+(options.sat6_fqdn)+'\n')
-        cf.write('certname        = '+(HOSTNAME)+'\n')
+        cf.write('certname        = '+(FQDN)+'\n')
         cf.write('environment     = '+(puppet_env)+'\n')
         cf.write('server          = '+(options.sat6_fqdn)+'\n')
     finally:
