@@ -174,6 +174,7 @@ def get_bootstrap_rpm():
     exec_failexit("rpm -ivh http://%s/pub/katello-ca-consumer-latest.noarch.rpm" % options.sat6_fqdn)
 
 def migrate_rhel5():
+    install_prereqs()
     _LIBPATH = "/usr/share/rhsm"
     # add to the path if need be
     if _LIBPATH not in sys.path:
