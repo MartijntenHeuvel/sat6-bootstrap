@@ -183,7 +183,7 @@ def migrate_rhel5():
     
     me = migrate.MigrationEngine()
     subscribed_channels = me.get_subscribed_channels_list()
-    me.print_banner(_("System is currently subscribed to these RHNClassic Channels:"))
+    me.print_banner(("System is currently subscribed to these RHNClassic Channels:"))
     for channel in subscribed_channels:
         print channel
     me.check_for_conflicting_channels(subscribed_channels)
