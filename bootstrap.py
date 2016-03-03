@@ -198,7 +198,7 @@ def migrate_rhel5():
         if ARCHITECTURE == "x86_64":
             shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-x86_64-10746ef5fdef-69.pem', '/etc/pki/product/69.pem')
         else:
-            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-i386-cb7d6c6883e4-69.pem', /'etc/pki/product/69.pem')
+            shutil.copy('/usr/share/rhsm/product/RHEL-5/Server-Server-i386-cb7d6c6883e4-69.pem', '/etc/pki/product/69.pem')
 
     # cleanup
     if os.path.exists('/etc/sysconfig/rhn/systemid'):
